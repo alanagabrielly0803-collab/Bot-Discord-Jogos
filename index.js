@@ -3,6 +3,7 @@ require('dotenv').config();
 const {
   ChannelType,
   Client,
+  EmbedBuilder,
   Events,
   GatewayIntentBits
 } = require('discord.js');
@@ -16,16 +17,28 @@ const {
   shorten
 } = require('./utils/formatEmbed');
 
-const TOKEN = process.env.TOKEN_DISCORD;
-const CHANNEL_ID = process.env.CHANNEL_ID;
+function getEnvValue(...names) {
+  for (const name of names) {
+    const value = process.env[name];
+    if (typeof value === 'string' && value.trim()) {
+      return value.trim();
+    }
+  }
+  return '';
+}
+
+const TOKEN = getEnvValue('TOKEN_DISCORD', 'DISCORD_TOKEN', 'BOT_TOKEN');
+const CHANNEL_ID = getEnvValue('CHANNEL_ID');
 const SEARCH_INTERVAL_MS = 60 * 60 * 1000;
 
 if (!TOKEN) {
-  throw new Error('TOKEN_DISCORD não definido no .env.');
+  throw new Error(
+    'Token do Discord nao definido. Configure TOKEN_DISCORD no ambiente do Render ou no arquivo .env local.'
+  );
 }
 
 if (!CHANNEL_ID) {
-  throw new Error('CHANNEL_ID não definido no .env.');
+  throw new Error('CHANNEL_ID nao definido. Configure a variavel de ambiente do canal.');
 }
 
 const client = new Client({
@@ -251,3 +264,5 @@ process.on('uncaughtException', (error) => {
 });
 
 client.login(TOKEN);
+
+

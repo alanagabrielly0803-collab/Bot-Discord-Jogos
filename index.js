@@ -1,5 +1,6 @@
 require('dotenv').config();
 
+const http = require('http');
 const {
   ChannelType,
   Client,
@@ -29,6 +30,7 @@ function getEnvValue(...names) {
 
 const TOKEN = getEnvValue('TOKEN_DISCORD', 'DISCORD_TOKEN', 'BOT_TOKEN');
 const CHANNEL_ID = getEnvValue('CHANNEL_ID');
+const PORT = getEnvValue('PORT') || '10000';
 const SEARCH_INTERVAL_MS = 60 * 60 * 1000;
 
 if (!TOKEN) {
@@ -45,6 +47,33 @@ const client = new Client({
   intents: [GatewayIntentBits.Guilds],
   allowedMentions: { parse: [] }
 });
+
+function startHttpServer() {
+  const server = http.createServer((req, res) => {
+    const url = new URL(req.url || '/', `http://${req.headers.host || 'localhost'}`);
+
+    if (url.pathname === '/health') {
+      res.writeHead(200, { 'Content-Type': 'text/plain; charset=utf-8' });
+      res.end('ok');
+      return;
+    }
+
+    if (url.pathname === '/') {
+      res.writeHead(200, { 'Content-Type': 'text/plain; charset=utf-8' });
+      res.end('Bot Discord Jogos online');
+      return;
+    }
+
+    res.writeHead(404, { 'Content-Type': 'text/plain; charset=utf-8' });
+    res.end('not found');
+  });
+
+  server.listen(PORT, '0.0.0.0', () => {
+    console.log(`Servidor HTTP ouvindo na porta ${PORT}`);
+  });
+
+  return server;
+}
 
 let searchInProgress = false;
 let lastSearchSummary = {
@@ -263,6 +292,10 @@ process.on('uncaughtException', (error) => {
   console.error('Uncaught exception:', error);
 });
 
-client.login(TOKEN);
+startHttpServer();
+client.login(TOKEN).catch((error) => {
+  console.error('Falha ao conectar o bot no Discord:', error);
+  process.exit(1);
+});
 
 
